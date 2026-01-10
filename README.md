@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Tests](https://img.shields.io/badge/Tests-11%20passed-brightgreen)
 
-A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file, following the **ArtNazarov/luassg** XML format.
+A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file, following the [Lua ArtNazarov/luassg site generator](https://github.com/ArtNazarov/luassg) XML format 
 
 ## Screenshots
 
