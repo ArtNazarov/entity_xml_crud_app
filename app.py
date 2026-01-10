@@ -22,8 +22,17 @@ class EntityCRUDApp:
         if not os.path.exists(self.entities_file):
             self.create_default_entities_file()
         
-        self.load_entities()
+        # Load data first
+        self.load_xml_data()
+        
+        # Initialize UI
         self.init_ui()
+        
+        # Render tabs after UI is initialized
+        self.render_xml_data_state()
+        
+        # Show the window
+        self.window.show_all()
     
     def create_default_entities_file(self):
         """Create a default entities XML file if it doesn't exist"""
@@ -31,8 +40,16 @@ class EntityCRUDApp:
         tree = ET.ElementTree(root)
         tree.write(self.entities_file, encoding='utf-8', xml_declaration=True)
     
+    def load_xml_data(self):
+        """Load all data from XML files (entities_description.xml and data files)"""
+        # Load entity definitions
+        self.load_entities()
+        
+        # Load entity records data
+        self.load_all_entity_data()
+    
     def load_entities(self):
-        """Load entities from XML file"""
+        """Load entity definitions from XML file"""
         try:
             tree = ET.parse(self.entities_file)
             root = tree.getroot()
@@ -57,7 +74,45 @@ class EntityCRUDApp:
             print(f"Error loading entities: {e}")
             self.entities = {}
     
-    def save_entities(self):
+    def load_all_entity_data(self):
+        """Load data for all entities from their XML files"""
+        for entity_name in self.entities.keys():
+            self.load_entity_data_from_files(entity_name)
+    
+    def load_entity_data_from_files(self, entity_name):
+        """Load data for a specific entity from XML files"""
+        entity_dir = os.path.join(self.data_dir, entity_name)
+        if not os.path.exists(entity_dir):
+            os.makedirs(entity_dir, exist_ok=True)
+            self.entities[entity_name]['records'] = {}
+            return
+        
+        records = {}
+        # Get all XML files in entity directory
+        for filename in os.listdir(entity_dir):
+            if filename.startswith(f"{entity_name}-") and filename.endswith('.xml'):
+                filepath = os.path.join(entity_dir, filename)
+                try:
+                    tree = ET.parse(filepath)
+                    root = tree.getroot()
+                    
+                    # Extract ID from filename
+                    record_id = filename[len(entity_name) + 1:-4]  # Remove "entity-" prefix and .xml
+                    
+                    # Extract field values
+                    record_data = {'id': record_id}
+                    for field in self.entities[entity_name]['fields']:
+                        field_name = field['name']
+                        field_elem = root.find(field_name)
+                        record_data[field_name] = field_elem.text if field_elem is not None else ''
+                    
+                    records[record_id] = record_data
+                except Exception as e:
+                    print(f"Error loading {filepath}: {e}")
+        
+        self.entities[entity_name]['records'] = records
+    
+    def save_entities_to_xml(self):
         """Save entities to XML file"""
         root = ET.Element('entities')
         
@@ -79,23 +134,8 @@ class EntityCRUDApp:
         tree = ET.ElementTree(root)
         tree.write(self.entities_file, encoding='utf-8', xml_declaration=True)
     
-    def indent_xml(self, elem, level=0):
-        """Helper function to format XML with indentation"""
-        indent = "\n" + level * "\t"
-        if len(elem):
-            if not elem.text or not elem.text.strip():
-                elem.text = indent + "\t"
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = indent
-            for child in elem:
-                self.indent_xml(child, level + 1)
-            if not child.tail or not child.tail.strip():
-                child.tail = indent
-        else:
-            if level and (not elem.tail or not elem.tail.strip()):
-                elem.tail = indent
-    
     def init_ui(self):
+        """Initialize the main UI components (window, notebook)"""
         # Create main window
         self.window = Gtk.Window(title="Entity CRUD Application")
         self.window.set_default_size(1200, 700)
@@ -104,19 +144,25 @@ class EntityCRUDApp:
         # Create notebook for tabs
         self.notebook = Gtk.Notebook()
         self.window.add(self.notebook)
+    
+    def render_xml_data_state(self):
+        """Clear UI and render tabs according to XML data content"""
+        # Check if notebook exists and is attached to window
+        if self.notebook and self.notebook.get_parent():
+            # Clear all existing tabs from notebook only
+            while self.notebook.get_n_pages() > 0:
+                self.notebook.remove_page(0)
         
         # Create entity tabs
-        self.create_entity_tabs()
-        
-        # Create management tab
-        self.create_management_tab()
-        
-        self.window.show_all()
-    
-    def create_entity_tabs(self):
-        """Create tabs for each entity"""
         for entity_name in self.entities.keys():
             self.create_entity_tab(entity_name)
+        
+        # Always create management tab as the last tab
+        self.create_management_tab()
+        
+        # Force UI update
+        if self.window:
+            self.window.queue_draw()
     
     def create_entity_tab(self, entity_name):
         """Create a tab for a specific entity"""
@@ -158,9 +204,9 @@ class EntityCRUDApp:
         for field in self.entities[entity_name]['fields']:
             columns.append(field['name'])
         
-        types = [str] * len(columns)  # All columns are strings
-        self.list_store = Gtk.ListStore(*types)
-        treeview.set_model(self.list_store)
+        types = [str] * len(columns)
+        list_store = Gtk.ListStore(*types)
+        treeview.set_model(list_store)
         
         # Create columns
         for i, column_name in enumerate(columns):
@@ -170,54 +216,35 @@ class EntityCRUDApp:
             column.set_min_width(100)
             treeview.append_column(column)
         
-        # Store reference to treeview
+        # Store UI references
         self.entities[entity_name]['treeview'] = treeview
-        self.entities[entity_name]['list_store'] = self.list_store
+        self.entities[entity_name]['list_store'] = list_store
         self.entities[entity_name]['columns'] = columns
+        self.entities[entity_name]['tab_widget'] = scrolled_window
         
-        # Load data
-        self.load_entity_data(entity_name)
+        # Populate data
+        self.populate_entity_tab_data(entity_name)
         
-        # Add tab
-        label = Gtk.Label(label=entity_name)
-        self.notebook.append_page(scrolled_window, label)
+        # Add tab to notebook if it exists
+        if self.notebook:
+            label = Gtk.Label(label=entity_name)
+            self.notebook.append_page(scrolled_window, label)
     
-    def load_entity_data(self, entity_name):
-        """Load data for a specific entity"""
+    def populate_entity_tab_data(self, entity_name):
+        """Populate the entity tab with data from memory"""
+        if 'list_store' not in self.entities[entity_name]:
+            return
+            
         list_store = self.entities[entity_name]['list_store']
         list_store.clear()
         
-        entity_dir = os.path.join(self.data_dir, entity_name)
-        if not os.path.exists(entity_dir):
-            os.makedirs(entity_dir, exist_ok=True)
-            return
-        
-        # Get all XML files in entity directory
-        for filename in os.listdir(entity_dir):
-            if filename.startswith(f"{entity_name}-") and filename.endswith('.xml'):
-                filepath = os.path.join(entity_dir, filename)
-                try:
-                    tree = ET.parse(filepath)
-                    root = tree.getroot()
-                    
-                    # Extract ID from filename (remove entity- prefix and .xml extension)
-                    record_id = filename[len(entity_name) + 1:-4]  # Remove "entity-" prefix and .xml
-                    
-                    # Create row data
-                    row_data = [record_id]
-                    
-                    # Extract field values
-                    for field in self.entities[entity_name]['fields']:
-                        field_name = field['name']
-                        field_elem = root.find(field_name)
-                        if field_elem is not None:
-                            row_data.append(field_elem.text or '')
-                        else:
-                            row_data.append('')
-                    
-                    list_store.append(row_data)
-                except Exception as e:
-                    print(f"Error loading {filepath}: {e}")
+        records = self.entities[entity_name].get('records', {})
+        for record_id, record_data in records.items():
+            row_data = [record_id]
+            for field in self.entities[entity_name]['fields']:
+                field_name = field['name']
+                row_data.append(record_data.get(field_name, ''))
+            list_store.append(row_data)
     
     def create_management_tab(self):
         """Create the management tab for entities"""
@@ -244,7 +271,7 @@ class EntityCRUDApp:
         delete_entity_button.connect("clicked", self.on_delete_entity)
         button_box.pack_start(delete_entity_button, False, False, 0)
         
-        refresh_button = Gtk.Button(label="Refresh")
+        refresh_button = Gtk.Button(label="Refresh All")
         refresh_button.connect("clicked", self.on_refresh_all)
         button_box.pack_start(refresh_button, False, False, 0)
         
@@ -268,19 +295,39 @@ class EntityCRUDApp:
         
         self.management_treeview = treeview
         
-        # Load entity list
-        self.load_entity_list()
+        # Populate entity list
+        self.populate_management_tab_data()
         
-        # Add tab
-        label = Gtk.Label(label="Entity Management")
-        self.notebook.append_page(scrolled_window, label)
+        # Add tab to notebook if it exists
+        if self.notebook:
+            label = Gtk.Label(label="Entity Management")
+            self.notebook.append_page(scrolled_window, label)
     
-    def load_entity_list(self):
-        """Load entity list in management tab"""
+    def populate_management_tab_data(self):
+        """Populate the management tab with entity list"""
+        if not hasattr(self, 'entity_list_store') or self.entity_list_store is None:
+            return
+            
         self.entity_list_store.clear()
         for entity_name, entity_data in self.entities.items():
             field_count = len(entity_data['fields'])
             self.entity_list_store.append([entity_name, str(field_count)])
+    
+    def indent_xml(self, elem, level=0):
+        """Helper function to format XML with indentation"""
+        indent = "\n" + level * "\t"
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = indent + "\t"
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = indent
+            for child in elem:
+                self.indent_xml(child, level + 1)
+            if not child.tail or not child.tail.strip():
+                child.tail = indent
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = indent
     
     def on_new_record(self, button, entity_name):
         """Handle new record creation"""
@@ -288,11 +335,16 @@ class EntityCRUDApp:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             self.save_record(entity_name, dialog.get_data())
-            self.load_entity_data(entity_name)
+            # Reload data and refresh UI
+            self.load_entity_data_from_files(entity_name)
+            self.populate_entity_tab_data(entity_name)
         dialog.destroy()
     
     def on_edit_record(self, button, entity_name):
         """Handle record editing"""
+        if entity_name not in self.entities or 'treeview' not in self.entities[entity_name]:
+            return
+            
         treeview = self.entities[entity_name]['treeview']
         selection = treeview.get_selection()
         model, treeiter = selection.get_selected()
@@ -303,13 +355,18 @@ class EntityCRUDApp:
             response = dialog.run()
             if response == Gtk.ResponseType.OK:
                 self.save_record(entity_name, dialog.get_data())
-                self.load_entity_data(entity_name)
+                # Reload data and refresh UI
+                self.load_entity_data_from_files(entity_name)
+                self.populate_entity_tab_data(entity_name)
             dialog.destroy()
         else:
             self.show_message("Please select a record to edit", Gtk.MessageType.WARNING)
     
     def on_delete_record(self, button, entity_name):
         """Handle record deletion"""
+        if entity_name not in self.entities or 'treeview' not in self.entities[entity_name]:
+            return
+            
         treeview = self.entities[entity_name]['treeview']
         selection = treeview.get_selection()
         model, treeiter = selection.get_selected()
@@ -328,15 +385,20 @@ class EntityCRUDApp:
             
             if response == Gtk.ResponseType.YES:
                 self.delete_record(entity_name, record_id)
-                self.load_entity_data(entity_name)
+                # Reload data and refresh UI
+                self.load_entity_data_from_files(entity_name)
+                self.populate_entity_tab_data(entity_name)
             
             dialog.destroy()
         else:
             self.show_message("Please select a record to delete", Gtk.MessageType.WARNING)
     
     def on_refresh_entity(self, button, entity_name):
-        """Refresh entity data"""
-        self.load_entity_data(entity_name)
+        """Refresh specific entity data"""
+        # Reload data from files
+        self.load_entity_data_from_files(entity_name)
+        # Refresh UI
+        self.populate_entity_tab_data(entity_name)
     
     def on_new_entity(self, button):
         """Handle new entity creation"""
@@ -345,21 +407,32 @@ class EntityCRUDApp:
         if response == Gtk.ResponseType.OK:
             entity_name, fields = dialog.get_data()
             if entity_name and entity_name not in self.entities:
-                self.entities[entity_name] = {'fields': fields}
-                self.save_entities()
-                self.create_entity_tab(entity_name)
-                self.load_entity_list()
-                self.window.show_all()
+                # Add to entities
+                self.entities[entity_name] = {
+                    'fields': fields,
+                    'records': {}
+                }
+                # Save to XML
+                self.save_entities_to_xml()
+                # Re-render UI tabs only
+                self.render_xml_data_state()
+                # Show the updated window
+                if self.window:
+                    self.window.show_all()
         dialog.destroy()
     
     def on_edit_entity(self, button):
         """Handle entity editing"""
+        if not hasattr(self, 'management_treeview') or self.management_treeview is None:
+            return
+            
         selection = self.management_treeview.get_selection()
         model, treeiter = selection.get_selected()
         
         if treeiter is not None:
             entity_name = model[treeiter][0]
             old_entity_name = entity_name
+            
             dialog = EntityDialog(self, entity_name)
             response = dialog.run()
             if response == Gtk.ResponseType.OK:
@@ -382,14 +455,25 @@ class EntityCRUDApp:
                                     new_path = os.path.join(new_dir, new_filename)
                                     os.rename(old_path, new_path)
                 
-                # Update entity
-                self.entities[new_entity_name] = {'fields': new_fields}
+                # Update entity in memory
+                # Preserve existing records if fields are compatible
+                existing_records = self.entities[old_entity_name].get('records', {}) if old_entity_name in self.entities else {}
+                
                 if old_entity_name != new_entity_name:
                     del self.entities[old_entity_name]
                 
-                self.save_entities()
-                self.recreate_tabs()
-                self.load_entity_list()
+                self.entities[new_entity_name] = {
+                    'fields': new_fields,
+                    'records': existing_records  # Keep existing records
+                }
+                
+                # Save to XML
+                self.save_entities_to_xml()
+                # Re-render UI tabs only
+                self.render_xml_data_state()
+                # Show the updated window
+                if self.window:
+                    self.window.show_all()
             
             dialog.destroy()
         else:
@@ -397,6 +481,9 @@ class EntityCRUDApp:
     
     def on_delete_entity(self, button):
         """Handle entity deletion"""
+        if not hasattr(self, 'management_treeview') or self.management_treeview is None:
+            return
+            
         selection = self.management_treeview.get_selection()
         model, treeiter = selection.get_selected()
         
@@ -418,30 +505,28 @@ class EntityCRUDApp:
                 if os.path.exists(entity_dir):
                     shutil.rmtree(entity_dir)
                 
-                # Remove entity
+                # Remove entity from memory
                 del self.entities[entity_name]
-                self.save_entities()
-                self.recreate_tabs()
-                self.load_entity_list()
+                
+                # Save to XML
+                self.save_entities_to_xml()
+                # Re-render UI tabs only
+                self.render_xml_data_state()
+                # Show the updated window
+                if self.window:
+                    self.window.show_all()
             
             dialog.destroy()
         else:
             self.show_message("Please select an entity to delete", Gtk.MessageType.WARNING)
     
     def on_refresh_all(self, button):
-        """Refresh all data"""
-        self.load_entities()
-        self.recreate_tabs()
-        self.load_entity_list()
-    
-    def recreate_tabs(self):
-        """Recreate all entity tabs"""
-        # Remove all tabs except the last one (management tab)
-        while self.notebook.get_n_pages() > 1:
-            self.notebook.remove_page(0)
-        
-        # Recreate entity tabs
-        self.create_entity_tabs()
+        """Refresh all data - reload from XML and re-render UI"""
+        self.load_xml_data()
+        self.render_xml_data_state()
+        # Show the updated window
+        if self.window:
+            self.window.show_all()
     
     def save_record(self, entity_name, data):
         """Save a record to XML file"""
@@ -463,6 +548,11 @@ class EntityCRUDApp:
         self.indent_xml(root)
         tree = ET.ElementTree(root)
         tree.write(filepath, encoding='utf-8', xml_declaration=True)
+        
+        # Update in-memory data
+        if 'records' not in self.entities[entity_name]:
+            self.entities[entity_name]['records'] = {}
+        self.entities[entity_name]['records'][record_id] = data
     
     def delete_record(self, entity_name, record_id):
         """Delete a record file"""
@@ -472,9 +562,20 @@ class EntityCRUDApp:
         
         if os.path.exists(filepath):
             os.remove(filepath)
+        
+        # Update in-memory data
+        if 'records' in self.entities[entity_name] and record_id in self.entities[entity_name]['records']:
+            del self.entities[entity_name]['records'][record_id]
     
     def get_record_data(self, entity_name, record_id):
-        """Get data for a specific record"""
+        """Get data for a specific record from memory"""
+        if entity_name not in self.entities:
+            return None
+            
+        if 'records' in self.entities[entity_name] and record_id in self.entities[entity_name]['records']:
+            return self.entities[entity_name]['records'][record_id]
+        
+        # Fallback to loading from file
         entity_dir = os.path.join(self.data_dir, entity_name)
         filename = f"{entity_name}-{record_id}.xml"
         filepath = os.path.join(entity_dir, filename)
@@ -489,11 +590,19 @@ class EntityCRUDApp:
                 field_elem = root.find(field_name)
                 data[field_name] = field_elem.text if field_elem is not None else ''
             
+            # Store in memory for future use
+            if 'records' not in self.entities[entity_name]:
+                self.entities[entity_name]['records'] = {}
+            self.entities[entity_name]['records'][record_id] = data
+            
             return data
         return None
     
     def show_message(self, message, message_type=Gtk.MessageType.INFO):
         """Show a message dialog"""
+        if not hasattr(self, 'window') or self.window is None:
+            return
+            
         dialog = Gtk.MessageDialog(
             transient_for=self.window,
             flags=0,

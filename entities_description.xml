@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <entities>
 	<entity>
 		<entity_name>posts</entity_name>
@@ -25,7 +26,7 @@
 			</entity_field>
 		</entity_fields>
 	</entity>
-    <entity>
+	<entity>
 		<entity_name>quotes</entity_name>
 		<entity_fields>
 			<entity_field>
@@ -34,6 +35,40 @@
 			</entity_field>
 			<entity_field>
 				<field_name>author</field_name>
+				<field_type>oneline</field_type>
+			</entity_field>
+		</entity_fields>
+	</entity>
+	<entity>
+		<entity_name>gallery</entity_name>
+		<entity_fields>
+			<entity_field>
+				<field_name>image_title</field_name>
+				<field_type>oneline</field_type>
+			</entity_field>
+			<entity_field>
+				<field_name>image_description</field_name>
+				<field_type>multiline</field_type>
+			</entity_field>
+			<entity_field>
+				<field_name>image_alt_text</field_name>
+				<field_type>oneline</field_type>
+			</entity_field>
+			<entity_field>
+				<field_name>image_src</field_name>
+				<field_type>oneline</field_type>
+			</entity_field>
+			<entity_field>
+				<field_name>author_comment</field_name>
+				<field_type>multiline</field_type>
+			</entity_field>
+		</entity_fields>
+	</entity>
+	<entity>
+		<entity_name>variants</entity_name>
+		<entity_fields>
+			<entity_field>
+				<field_name>data</field_name>
 				<field_type>oneline</field_type>
 			</entity_field>
 		</entity_fields>
