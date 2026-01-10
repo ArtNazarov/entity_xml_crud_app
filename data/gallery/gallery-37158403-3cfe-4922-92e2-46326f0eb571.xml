@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
-<record>
-	<id>37158403-3cfe-4922-92e2-46326f0eb571</id>
+<gallery id="37158403-3cfe-4922-92e2-46326f0eb571">
 	<image_title>The kitten</image_title>
 	<image_description>Some description</image_description>
 	<image_alt_text>Some alt text</image_alt_text>
 	<image_src>https://upload.wikimedia.org/wikipedia/commons/9/9b/Photo_of_a_kitten.jpg</image_src>
-</record>
+	<author_comment>my comment</author_comment>
+</gallery>
