@@ -7,6 +7,16 @@
 
 A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file.
 
+## Screenshots
+
+![List of data](https://dl.dropbox.com/scl/fi/epmnizkvaazfqxnc935z7/scrI.png?rlkey=t3wafij9nlafs2gatjc6u37dy&st=ntiq8k3m)
+
+![Editing some data](https://dl.dropbox.com/scl/fi/4so1ovazk58gsvag2ynyc/scrII.png?rlkey=21xhbk42zox5crp9e3w1sce5p&st=vtpwier6)
+
+![List of entities](https://dl.dropbox.com/scl/fi/r1i2f01mkwz0ghfgxount/scrIII.png?rlkey=ck9iipaqqg56niqerg3if0o26&st=0f2s9p6d)
+
+![Editing some entity structure](https://dl.dropbox.com/scl/fi/hvvuz01r4div7g439pwhd/scrIV.png?rlkey=phkk07rykx1p9ng66z5wxjrea&st=2hlq1nsi)
+
 ## ✨ Features
 
 - **Multi-Entity Management**: Automatically creates tabs for each entity defined in XML
