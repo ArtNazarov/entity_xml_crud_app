@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Tests](https://img.shields.io/badge/Tests-11%20passed-brightgreen)
 
-A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file.
+A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file, following the **ArtNazarov/luassg** XML format.
 
 ## Screenshots
 
@@ -24,6 +24,7 @@ A modern GTK3 desktop application for managing entity-based data with XML storag
 - **Dynamic Entity Definition**: Define custom entities with configurable fields
 - **Field Type Support**: Two field types supported: `oneline` (single-line text) and `multiline` (multi-line text area)
 - **Entity Management**: Create, edit, and delete entities with automatic file system updates
+- **luassg XML Format**: Compatible with **ArtNazarov/luassg** XML structure
 - **Persistent XML Storage**: All data stored in structured XML files
 - **Clean Architecture**: Clear separation between data loading and UI rendering
 - **Comprehensive Testing**: 11 tests with full coverage using pytest
@@ -41,7 +42,9 @@ A modern GTK3 desktop application for managing entity-based data with XML storag
     │   ├── posts-[uuid].xml    # Entity files follow: entity-entityId.xml format
     │   └── ...
     ├── news/
-    └── quotes/
+    ├── quotes/
+    └── gallery/
+        └── gallery-37158403-3cfe-4922-92e2-46326f0eb571.xml  # Example file
 ```
 
 ## 🚀 Quick Start
@@ -110,19 +113,32 @@ The application automatically creates necessary directories and files:
 - Loads existing entities and data on startup
 
 ### Entity Definition Format
-Entities are defined in `entities_description.xml`:
+Entities are defined in `entities_description.xml` following the luassg format:
 
 ```xml
+<?xml version='1.0' encoding='utf-8'?>
 <entities>
     <entity>
-        <entity_name>posts</entity_name>
+        <entity_name>gallery</entity_name>
         <entity_fields>
             <entity_field>
                 <field_name>title</field_name>
                 <field_type>oneline</field_type>
             </entity_field>
             <entity_field>
-                <field_name>message</field_name>
+                <field_name>description</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>alt</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>src</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>comment</field_name>
                 <field_type>multiline</field_type>
             </entity_field>
         </entity_fields>
@@ -153,21 +169,117 @@ Entities are defined in `entities_description.xml`:
 ```
 ./data/{entity_name}/{entity_name}-{unique_id}.xml
 ```
-Example: `./data/posts/posts-550e8400-e29b-41d4-a716-446655440000.xml`
+Example: `./data/gallery/gallery-37158403-3cfe-4922-92e2-46326f0eb571.xml`
 
-### Record XML Format
+### Record XML Format (luassg compatible)
+The application saves records in the **ArtNazarov/luassg** XML format:
+
 ```xml
-<?xml version="1.0"?>
-<record>
-    <id>550e8400-e29b-41d4-a716-446655440000</id>
-    <title>Sample Post</title>
-    <message>This is a sample message with multiple lines.</message>
-</record>
+<?xml version='1.0' encoding='utf-8'?>
+<gallery id="37158403-3cfe-4922-92e2-46326f0eb571">
+    <title>The kitten</title>
+    <description>Some description</description>
+    <alt>Some alt text</alt>
+    <src>https://upload.wikimedia.org/wikipedia/commons/9/9b/Photo_of_a_kitten.jpg</src>
+    <comment>my comment</comment>
+</gallery>
+```
+
+**Key characteristics:**
+- Root element name matches entity name
+- `id` attribute on root element contains the record identifier
+- Field elements as direct children of root
+- XML declaration with encoding
+- Proper indentation for readability
+
+### Example Files Structure
+
+**entities_description.xml:**
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<entities>
+    <entity>
+        <entity_name>posts</entity_name>
+        <entity_fields>
+            <entity_field>
+                <field_name>title</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>message</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+        </entity_fields>
+    </entity>
+    <entity>
+        <entity_name>news</entity_name>
+        <entity_fields>
+            <entity_field>
+                <field_name>caption</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>longread</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+        </entity_fields>
+    </entity>
+    <entity>
+        <entity_name>quotes</entity_name>
+        <entity_fields>
+            <entity_field>
+                <field_name>phrase</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>author</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+        </entity_fields>
+    </entity>
+    <entity>
+        <entity_name>gallery</entity_name>
+        <entity_fields>
+            <entity_field>
+                <field_name>title</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>description</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>alt</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>src</field_name>
+                <field_type>oneline</field_type>
+            </entity_field>
+            <entity_field>
+                <field_name>comment</field_name>
+                <field_type>multiline</field_type>
+            </entity_field>
+        </entity_fields>
+    </entity>
+</entities>
+```
+
+**data/gallery/gallery-37158403-3cfe-4922-92e2-46326f0eb571.xml:**
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<gallery id="37158403-3cfe-4922-92e2-46326f0eb571">
+    <title>The kitten</title>
+    <description>Some description</description>
+    <alt>Some alt text</alt>
+    <src>https://upload.wikimedia.org/wikipedia/commons/9/9b/Photo_of_a_kitten.jpg</src>
+    <comment>my comment</comment>
+</gallery>
 ```
 
 ## 🧪 Testing
 
-The project includes 11 comprehensive pytest tests:
+The project includes 11 comprehensive pytest tests that verify:
 
 ```bash
 # Run all tests
@@ -179,13 +291,21 @@ python -m pytest tests.py::test_load_entities -v
 # Test coverage includes:
 # ✓ Entity loading and parsing
 # ✓ Field type validation  
-# ✓ File naming conventions
+# ✓ File naming conventions (entity-entityId.xml)
 # ✓ Directory structure
-# ✓ CRUD operations
+# ✓ CRUD operations with luassg format
 # ✓ Integration tests
+# ✓ Loading existing luassg format files
 ```
 
 ## 🔧 Key Implementation Details
+
+### luassg XML Format Compatibility
+The application is specifically designed to work with the **ArtNazarov/luassg** XML format:
+- Records are saved with root element name = entity name
+- `id` attribute on root element contains record identifier
+- Field values are stored as child elements
+- Automatic handling of filename pattern: `{entity_name}-{entity_id}.xml`
 
 ### Fixed Bugs
 1. **Empty window on startup** - Proper initialization sequence
@@ -197,12 +317,14 @@ python -m pytest tests.py::test_load_entities -v
 - In-memory data caching for quick access
 - Selective UI updates (entity vs full refresh)
 - Efficient XML parsing with error handling
+- Proper handling of luassg format files
 
 ### User Experience
 - Confirmation dialogs for destructive actions
 - Real-time data synchronization
 - Clear error messages
 - Responsive UI with proper scrolling
+- Automatic file renaming when entity names change
 
 ## 🐛 Troubleshooting
 
@@ -221,6 +343,9 @@ sudo apt-get install python3-gi  # Ubuntu/Debian
 **Issue**: Tabs disappear after refresh
 **Solution**: This bug has been fixed in current version. Update to latest code.
 
+**Issue**: XML files not loading correctly
+**Solution**: Ensure files follow luassg format with `id` attribute on root element
+
 ### Debug Mode
 Add debug prints to `load_entities()` method to see XML parsing issues.
 
@@ -234,7 +359,7 @@ Add debug prints to `load_entities()` method to see XML parsing issues.
 
 ### Development Guidelines
 - Write tests for new features
-- Maintain backward compatibility
+- Maintain backward compatibility with luassg format
 - Follow Python PEP 8 style guide
 - Update documentation as needed
 - Ensure all 11 tests pass before submitting PR
@@ -249,6 +374,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Python community for amazing libraries
 - Pytest team for robust testing framework
 - All contributors who helped fix bugs and improve the application
+- **ArtNazarov/luassg** for the XML format specification
 
 ## 📧 Contact
 
@@ -281,10 +407,10 @@ User Action → Load XML Data → Update Memory → Render UI State → Show Win
    - Name: "tasks"
    - Fields: "name" (oneline), "description" (multiline)
 3. **Add records**: Go to "tasks" tab → "New Record"
-   - Fill in fields and save
+   - Fill in fields and save (creates `tasks-{uuid}.xml` in luassg format)
 4. **Edit structure**: Go to "Entity Management" → Select "tasks" → "Edit Entity"
    - Add field: "priority" (oneline)
    - UI automatically updates with new column
 5. **Refresh data**: Click "Refresh All" to reload from disk
 
-That's it! Your data is automatically saved in the correct XML format.
+That's it! Your data is automatically saved in the **luassg XML format**.
