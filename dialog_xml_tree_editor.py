@@ -38,8 +38,19 @@ def model_to_xml(store, parent_iter, xml_parent):
 
         # Create XML element
         elem = etree.SubElement(xml_parent, tag)
-        if text:
+        if text and not text.startswith('{') and not text.endswith('}'):  # Don't set text if it's attribute string
             elem.text = text.strip()
+        
+        # Handle attributes if value looks like a dict
+        if text and text.startswith('{') and text.endswith('}'):
+            try:
+                # Remove the curly braces and parse attributes
+                import ast
+                attrs = ast.literal_eval(text)
+                for key, value in attrs.items():
+                    elem.set(key, str(value))
+            except:
+                pass  # If it fails, just leave as text
 
         # Process grandchildren
         model_to_xml(store, child_iter, elem)
@@ -88,7 +99,15 @@ class XmlEditorWindow(Gtk.Window):
 
         # Модель TreeStore: [tag, value/text, display_tag]
         self.store = Gtk.TreeStore(str, str, str)
-        parse_xml_to_model(root, self.store)
+        
+        # ✅ FIX: Start parsing from root element, not from its children
+        # First add the root element itself
+        root_text = (root.text or '').strip() if root.text else ''
+        root_attrib = str(dict(root.attrib)) if root.attrib else ''
+        root_value = root_text or root_attrib or ''
+        
+        root_iter = self.store.append(None, [root.tag, root_value, root.tag])
+        parse_xml_to_model(root, self.store, root_iter)
 
         # ✅ ФИКС: правильно считаем количество корневых элементов
         root_count = self.store.iter_n_children(None)
@@ -162,24 +181,42 @@ class XmlEditorWindow(Gtk.Window):
         """Сохранение с правильной структурой"""
         try:
             if self.original_root_tag:
-                # Create new root element
-                root = etree.Element(self.original_root_tag)
-
-                # Start from the first child of the root in TreeStore
+                # ✅ FIX: Get the root element from TreeStore
                 root_iter = self.store.get_iter_first()
                 if root_iter:
-                    # Get children of root (which correspond to XML children)
+                    # Create the root element
+                    root = etree.Element(self.original_root_tag)
+                    
+                    # Set root text if exists
+                    root_text = self.store[root_iter][1]
+                    if root_text and not root_text.startswith('{') and not root_text.endswith('}'):
+                        root.text = root_text.strip()
+                    
+                    # Handle root attributes if value looks like a dict
+                    if root_text and root_text.startswith('{') and root_text.endswith('}'):
+                        try:
+                            import ast
+                            attrs = ast.literal_eval(root_text)
+                            for key, value in attrs.items():
+                                root.set(key, str(value))
+                        except:
+                            pass
+
+                    # Build XML from children of the root
                     child_iter = self.store.iter_children(root_iter)
                     model_to_xml(self.store, root_iter, root)
 
-                # Create and save the XML tree
-                tree = etree.ElementTree(root)
-                tree.write(self.filename, pretty_print=True,
-                          xml_declaration=True, encoding='utf-8')
+                    # Create and save the XML tree
+                    tree = etree.ElementTree(root)
+                    tree.write(self.filename, pretty_print=True,
+                              xml_declaration=True, encoding='utf-8')
 
-                dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
-                                         Gtk.ButtonsType.OK,
-                                         f"✅ Сохранено: {self.filename}")
+                    dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
+                                             Gtk.ButtonsType.OK,
+                                             f"✅ Сохранено: {self.filename}")
+                else:
+                    dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.WARNING,
+                                             Gtk.ButtonsType.OK, "Модель пуста!")
             else:
                 dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.WARNING,
                                          Gtk.ButtonsType.OK, "Модель пуста!")
