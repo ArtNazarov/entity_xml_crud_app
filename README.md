@@ -61,6 +61,10 @@ The application now includes a **Configuration** menu that allows you to directl
 
 ![Adaptive responsive design](https://dl.dropbox.com/scl/fi/vikuz2a5zzkyyn6aqkx35/floating_adaptive_responsive_sizes.png?rlkey=x283a1dinvz4lsikyn767oa63&st=sxcbl09d)
 
+## Video
+
+[Watch video](https://dl.dropbox.com/scl/fi/xm7m006ape8ljay1m7gdm/video_demo.mp4?rlkey=0vlczz1rq5hm5ubsn8j6daoxl&st=omqkioga&raw=1)
+
 ## ✨ Features
 
 - **Multi-Entity Management**: Automatically creates tabs for each entity defined in XML
