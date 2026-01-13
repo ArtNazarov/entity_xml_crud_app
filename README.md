@@ -45,7 +45,13 @@ The application now includes a **Configuration** menu that allows you to directl
 
 ## Screenshots
 
-![List of data](https://dl.dropbox.com/scl/fi/epmnizkvaazfqxnc935z7/scrI.png?rlkey=t3wafij9nlafs2gatjc6u37dy&st=ntiq8k3m)
+![List of data, main menu](https://dl.dropbox.com/scl/fi/qpis5l2a0i60bleplqib1/scrI_updated.png?rlkey=9kilfk6xc11sdxtmfvbit3xpx&st=qm3pgh0e)
+
+![Menu items for config editor](https://dl.dropbox.com/scl/fi/1kkgx5n11cfsggrh52a41/scrI_main_menu.png?rlkey=0ukgju14f1bt6uu7yqbsjswf7&st=q7x1nn4t)
+
+![Editing ./data/CONST.xml](https://dl.dropbox.com/scl/fi/swdj2f2tc0xdcs5i6yv0d/scr_const_dialog.png?rlkey=xub8wspme6u8dj5rqrl2tpde3&st=qka4q901)
+
+![Editing ./data/pagination.xml](https://dl.dropbox.com/scl/fi/k4bln7amtr28v3d6l1tzs/scr_pagination_dialog.png?rlkey=aeepp5yrh8knefrjm7lggs7w6&st=dz2oozss)
 
 ![Editing some data](https://dl.dropbox.com/scl/fi/4so1ovazk58gsvag2ynyc/scrII.png?rlkey=21xhbk42zox5crp9e3w1sce5p&st=vtpwier6)
 
