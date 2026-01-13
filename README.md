@@ -511,101 +511,27 @@ Configuration Menu → Launch Editor → Edit XML → Save Changes
 That's it! Your data is automatically saved in the **luassg XML format** and configuration files can be edited directly from the application menu.
 
 
-## 📱 Responsive UI Layout Implementation
+# 📱 Responsive UI Layout
 
-The application features a fully responsive GTK3 interface that adapts to different window sizes and screen resolutions:
+The application features a fully responsive GTK3 interface that adapts to different window sizes and screen resolutions.
 
-### Adaptive Design Features
+## 🎨 Adaptive Design Features
 
-#### **Window Resizing Behavior**
-- **Dynamic Column Adjustment**: The entity list columns automatically adjust width based on window size
-- **Minimum Window Size**: Set to 800x600 pixels to ensure usability on smaller screens
-- **Maximum Window Size**: Allows full-screen utilization without layout breaks
+### Dynamic Layout Behavior
+- **Column Resizing**: TreeView columns automatically adjust width based on available space
+- **Minimum Window Size**: Set to 800×600 pixels to ensure usability
+- **Form Adaptation**: Input fields and labels rearrange from horizontal to vertical layout on narrow screens
 
-#### **Responsive Components**
+### Responsive Components
+- **Entity List**: Columns hide or resize based on available width
+- **Dialog Forms**: Field layouts adapt to dialog size with intelligent spacing
+- **Tab Interface**: Tab labels truncate with ellipsis when space is limited
 
-**1. TreeView Columns**
-- **Priority-based Sizing**: Title/name fields get priority for available space
-- **Proportional Distribution**: Remaining space distributed evenly among other columns
-- **Column Hiding**: Secondary columns can be hidden on very small screens
-
-**2. Form Layouts (Record/Entity Dialogs)**
-- **Field Label Alignment**: Labels adjust from side-by-side to top-aligned on narrow screens
-- **Input Field Expansion**: Text inputs expand to fill available horizontal space
-- **Scrollable Containers**: Multi-line text areas include scrollbars when content overflows
-
-**3. Tab Management**
-- **Tab Label Truncation**: Long entity names are truncated with ellipsis on narrow tabs
-- **Tab Scrolling**: Horizontal scroll arrows appear when tabs exceed available width
-
-#### **Configuration Dialog Responsiveness**
-- **XML Tree Editor**: The configuration XML editor adapts to window size with:
-  - Adjustable tree view columns
-  - Scrollable editor panels
-  - Resizable property/value sections
-
-### Mobile/Tablet Optimizations
-While primarily a desktop application, the UI includes optimizations for touch devices:
-- **Touch-friendly Targets**: Buttons and interactive elements have sufficient padding
-- **Gesture Support**: Basic scroll gestures are supported in list views
-- **Focus Management**: Clear visual feedback for focused elements
-
-### High-DPI Display Support
-- **Scalable Interface**: UI elements scale properly on high-DPI (Retina) displays
-- **Icon Scaling**: Menu icons and buttons maintain crisp appearance at different resolutions
-- **Font Adaptation**: Uses system fonts that respect user's DPI settings
-
-### Layout Breakpoints
-The application responds to these approximate window width breakpoints:
-
-| Window Width | Layout Behavior |
-|--------------|-----------------|
-| 800px+ | Full layout with all columns visible |
-| 600-799px | Compact layout with some columns hidden |
-| 400-599px | Minimal layout, vertical form stacking |
-| <400px | Scrollable container with basic elements |
-
-### Implementation Details
-
-#### **GTK3 Responsive Techniques Used**
+### Implementation Highlights
 ```python
-# Example responsive configuration
-window.set_size_request(800, 600)  # Minimum size
+# Core responsive settings
+window.set_size_request(800, 600)  # Minimum usable size
 scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-tree_view.set_headers_clickable(True)  # Allow column resizing
-
-# Responsive column sizing
 column.set_resizable(True)
-column.set_expand(True)  # For important columns
-column.set_min_width(100)  # Minimum readable width
-
-# Adaptive form layout
-grid.set_column_spacing(10)
-grid.set_row_spacing(5)
-grid.set_column_homogeneous(False)  # Allow different column widths
+column.set_expand(True)  # Key columns expand first
 ```
-
-#### **Size Allocation Management**
-- **Size Groups**: Used to synchronize sizes of related components
-- **Alignment Controls**: Widgets aligned and packed with responsive policies
-- **Expand/Fill Flags**: Proper use of `expand` and `fill` properties in containers
-
-### Performance Considerations
-- **Lazy Loading**: Heavy UI components load only when needed
-- **Progressive Rendering**: Complex views render in stages to maintain responsiveness
-- **Memory Management**: UI components properly disposed when not in use
-
-### Testing Responsiveness
-The responsive layout has been tested with:
-- **Window Resizing**: Manual testing of all resize operations
-- **Different Resolutions**: 1920x1080, 1366x768, 1024x768, and mobile sizes
-- **DPI Scaling**: 100%, 125%, 150%, and 200% scaling factors
-- **Multiple Monitors**: Moving windows between displays with different DPI settings
-
-### Customization Options
-Users can enhance responsiveness through:
-1. **System Settings**: GTK theme and font size preferences
-2. **Application Preferences**: Future implementation could include layout density options
-3. **Keyboard Shortcuts**: For power users to navigate efficiently
-
-The responsive design ensures the application remains usable and visually appealing across the wide variety of desktop environments and screen configurations used by different users.
