@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 import shutil
 import tempfile
+import subprocess  # Added for launching processes
 
 class EntityCRUDApp:
     def __init__(self):
@@ -158,9 +159,84 @@ class EntityCRUDApp:
         self.window.set_default_size(1200, 700)
         self.window.connect("destroy", Gtk.main_quit)
 
+        # Create main vertical box
+        main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.window.add(main_vbox)
+
+        # Create menu bar
+        self.create_menu_bar()
+        main_vbox.pack_start(self.menu_bar, False, False, 0)
+
         # Create notebook for tabs
         self.notebook = Gtk.Notebook()
-        self.window.add(self.notebook)
+        main_vbox.pack_start(self.notebook, True, True, 0)
+
+    def create_menu_bar(self):
+        """Create the main menu bar"""
+        self.menu_bar = Gtk.MenuBar()
+
+        # Configuration menu
+        config_menu_item = Gtk.MenuItem(label="Configuration")
+        self.menu_bar.append(config_menu_item)
+
+        # Configuration submenu
+        config_menu = Gtk.Menu()
+        config_menu_item.set_submenu(config_menu)
+
+        # Open CONST.xml menu item
+        const_menu_item = Gtk.MenuItem(label="Open ./data/CONST.xml")
+        const_menu_item.connect("activate", self.on_open_const_xml)
+        config_menu.append(const_menu_item)
+
+        # Open pagination.xml menu item
+        pagination_menu_item = Gtk.MenuItem(label="Open ./data/pagination.xml")
+        pagination_menu_item.connect("activate", self.on_open_pagination_xml)
+        config_menu.append(pagination_menu_item)
+
+    def on_open_const_xml(self, menu_item):
+        """Handle opening CONST.xml in the XML tree editor"""
+        const_file = os.path.join(self.data_dir, "CONST.xml")
+        self.open_xml_in_editor(const_file)
+
+    def on_open_pagination_xml(self, menu_item):
+        """Handle opening pagination.xml in the XML tree editor"""
+        pagination_file = os.path.join(self.data_dir, "pagination.xml")
+        self.open_xml_in_editor(pagination_file)
+
+    def open_xml_in_editor(self, xml_file_path):
+        """Launch the XML tree editor as a new process"""
+        # Check if the XML file exists
+        if not os.path.exists(xml_file_path):
+            # Create the file if it doesn't exist
+            try:
+                # Create a minimal XML structure
+                root = ET.Element('root')
+                tree = ET.ElementTree(root)
+                # Ensure the directory exists
+                os.makedirs(os.path.dirname(xml_file_path), exist_ok=True)
+                tree.write(xml_file_path, encoding='utf-8', xml_declaration=True)
+                print(f"Created missing XML file: {xml_file_path}")
+            except Exception as e:
+                self.show_message(f"Failed to create XML file {xml_file_path}: {str(e)}", Gtk.MessageType.ERROR)
+                return
+
+        # Get the path to dialog_xml_tree_editor.py
+        # Assuming it's in the same directory as app.py
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        editor_script = os.path.join(script_dir, "dialog_xml_tree_editor.py")
+
+        # Check if the editor script exists
+        if not os.path.exists(editor_script):
+            self.show_message(f"XML tree editor not found: {editor_script}", Gtk.MessageType.ERROR)
+            return
+
+        try:
+            # Launch the editor as a new process
+            # Using python3 explicitly to ensure compatibility
+            subprocess.Popen(['python3', editor_script, xml_file_path])
+            print(f"Launched XML editor for: {xml_file_path}")
+        except Exception as e:
+            self.show_message(f"Failed to launch XML editor: {str(e)}", Gtk.MessageType.ERROR)
 
     def render_xml_data_state(self):
         """Clear UI and render tabs according to XML data content"""

@@ -5,7 +5,43 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Tests](https://img.shields.io/badge/Tests-11%20passed-brightgreen)
 
-A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file, following the [Lua ArtNazarov/luassg site generator](https://github.com/ArtNazarov/luassg) XML format 
+A modern GTK3 desktop application for managing entity-based data with XML storage. This application provides a user-friendly interface for performing CRUD (Create, Read, Update, Delete) operations on entities defined in an XML configuration file, following the [Lua ArtNazarov/luassg site generator](https://github.com/ArtNazarov/luassg) XML format.
+
+## 🌟 New Feature: Configuration Menu with XML Tree Editor Integration
+
+### XML Tree Editor Integration
+
+The application now includes a **Configuration** menu that allows you to directly edit XML configuration files using an integrated XML tree editor:
+
+#### Added Features:
+- **Configuration Menu**: Main menu with "Configuration" dropdown
+- **Direct XML Editing**: Two menu items for editing common configuration files:
+  - **Open ./data/CONST.xml**: Edit the CONST.xml configuration file
+  - **Open ./data/pagination.xml**: Edit the pagination.xml configuration file
+- **Integrated Editor**: Launches `dialog_xml_tree_editor.py` as a standalone process
+- **Automatic File Creation**: Missing XML files are automatically created if they don't exist
+
+#### How It Works:
+1. Click **Configuration** in the main menu bar
+2. Select either **"Open ./data/CONST.xml"** or **"Open ./data/pagination.xml"**
+3. The application automatically:
+   - Checks if the XML file exists (creates it if missing)
+   - Verifies the XML tree editor script is available
+   - Launches the editor in a new process with the selected file
+4. Edit the XML file in a dedicated tree-based editor interface
+5. Changes are saved back to the original file
+
+#### Technical Details:
+- **Process Isolation**: XML editor runs as a separate process, keeping the main app responsive
+- **File Validation**: Ensures XML files follow proper structure before editing
+- **Path Resolution**: Automatically finds the editor script in the same directory as app.py
+- **Error Handling**: Comprehensive error messages if files or editor are missing
+
+#### Benefits:
+- 🔧 **Direct Configuration Editing**: Edit XML configs without leaving the application
+- 🌳 **Visual XML Editing**: Use a tree-based editor for complex XML structures
+- 🔄 **Live Updates**: Changes made in the editor are immediately saved
+- ⚡ **Non-blocking**: Main application remains responsive while editing
 
 ## Screenshots
 
@@ -28,6 +64,7 @@ A modern GTK3 desktop application for managing entity-based data with XML storag
 - **Persistent XML Storage**: All data stored in structured XML files
 - **Clean Architecture**: Clear separation between data loading and UI rendering
 - **Comprehensive Testing**: 11 tests with full coverage using pytest
+- **Configuration Menu**: Integrated XML tree editor for editing configuration files
 
 ## 📁 File Structure
 
@@ -35,9 +72,12 @@ A modern GTK3 desktop application for managing entity-based data with XML storag
 ./
 ├── app.py                      # Main application
 ├── tests.py                    # Pytest test suite (11 tests)
+├── dialog_xml_tree_editor.py   # XML tree editor for configuration files
 ├── entities_description.xml    # Entity definitions
 ├── README.md                   # This file
 └── data/                       # Data storage directory
+    ├── CONST.xml               # Configuration file (editable via menu)
+    ├── pagination.xml          # Configuration file (editable via menu)
     ├── posts/                  # Example entity directory
     │   ├── posts-[uuid].xml    # Entity files follow: entity-entityId.xml format
     │   └── ...
@@ -54,7 +94,7 @@ A modern GTK3 desktop application for managing entity-based data with XML storag
 # For Arch Linux
 git clone https://github.com/ArtNazarov/entity_xml_crud_app.git
 cd entity_xml_crud_app
-sudo pacman -S python python-gobject gtk3 python-pytest
+sudo pacman -S python python-gobject gtk3 python-pytest python-lxml
 python app.py
 ```
 
@@ -67,22 +107,22 @@ python -m pytest tests.py -v
 
 ### Arch Linux
 ```bash
-sudo pacman -S python python-gobject gtk3 python-pytest
+sudo pacman -S python python-gobject gtk3 python-pytest python-lxml
 ```
 
 ### Ubuntu/Debian
 ```bash
-sudo apt-get install python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-pytest
+sudo apt-get install python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-pytest python3-lxml
 ```
 
 ### Fedora
 ```bash
-sudo dnf install python3 python3-gobject gtk3 python3-pytest
+sudo dnf install python3 python3-gobject gtk3 python3-pytest python3-lxml
 ```
 
 ### Using pip
 ```bash
-pip install PyGObject pytest
+pip install PyGObject pytest lxml
 ```
 
 ## 🏗️ Architecture
@@ -98,11 +138,18 @@ The application follows a clean architecture with clear separation of concerns:
 - `render_xml_data_state()`: Clears UI and renders tabs based on in-memory data
 - `create_entity_tab()`: Creates individual entity tabs
 - `create_management_tab()`: Creates the management tab (always last)
+- `create_menu_bar()`: Creates the main menu with configuration options
+
+### Configuration Management
+- `on_open_const_xml()`: Handles opening CONST.xml in the XML tree editor
+- `on_open_pagination_xml()`: Handles opening pagination.xml in the XML tree editor
+- `open_xml_in_editor()`: Common method for launching the XML tree editor
 
 ### Key Benefits
 - **No UI flickering**: Tabs don't disappear during refresh
 - **Robust updates**: Entity structure changes handled gracefully
 - **Clean separation**: Data operations separate from UI rendering
+- **Integrated configuration**: Edit XML files directly from the application
 
 ## 🎮 Using the Application
 
@@ -111,6 +158,13 @@ The application automatically creates necessary directories and files:
 - Creates `./data/` directory if it doesn't exist
 - Creates `./entities_description.xml` with default structure if missing
 - Loads existing entities and data on startup
+
+### Editing Configuration Files
+1. Click **Configuration** in the main menu bar
+2. Select **"Open ./data/CONST.xml"** to edit the CONST.xml file
+3. Select **"Open ./data/pagination.xml"** to edit the pagination.xml file
+4. The XML tree editor opens in a new window for visual XML editing
+5. Make changes and save - they are immediately reflected in the file
 
 ### Entity Definition Format
 Entities are defined in `entities_description.xml` following the luassg format:
@@ -163,6 +217,10 @@ Entities are defined in `entities_description.xml` following the luassg format:
 - **Delete Entity**: Remove entity and all associated data with confirmation
 - **Refresh All**: Reload all data and refresh entire UI
 
+### Configuration Operations (main menu)
+- **Open CONST.xml**: Edit the CONST.xml configuration file
+- **Open pagination.xml**: Edit the pagination.xml configuration file
+
 ## 💾 Data Storage
 
 ### File Naming Convention
@@ -170,6 +228,10 @@ Entities are defined in `entities_description.xml` following the luassg format:
 ./data/{entity_name}/{entity_name}-{unique_id}.xml
 ```
 Example: `./data/gallery/gallery-37158403-3cfe-4922-92e2-46326f0eb571.xml`
+
+### Configuration Files
+- `./data/CONST.xml`: Application configuration constants
+- `./data/pagination.xml`: Pagination settings and configuration
 
 ### Record XML Format (luassg compatible)
 The application saves records in the **ArtNazarov/luassg** XML format:
@@ -307,6 +369,14 @@ The application is specifically designed to work with the **ArtNazarov/luassg** 
 - Field values are stored as child elements
 - Automatic handling of filename pattern: `{entity_name}-{entity_id}.xml`
 
+### Configuration Menu Implementation
+The new configuration menu feature integrates seamlessly:
+- **Menu Bar Integration**: Added to main window without disrupting existing layout
+- **Process Management**: Uses `subprocess.Popen` to launch editor independently
+- **File Validation**: Checks if XML files exist and creates them if missing
+- **Error Handling**: Provides user feedback if editor script is not found
+- **Path Resolution**: Automatically locates `dialog_xml_tree_editor.py` in the same directory
+
 ### Fixed Bugs
 1. **Empty window on startup** - Proper initialization sequence
 2. **Tabs disappearing on refresh** - Separate data loading from UI rendering
@@ -318,6 +388,7 @@ The application is specifically designed to work with the **ArtNazarov/luassg** 
 - Selective UI updates (entity vs full refresh)
 - Efficient XML parsing with error handling
 - Proper handling of luassg format files
+- Independent process for XML editing (non-blocking)
 
 ### User Experience
 - Confirmation dialogs for destructive actions
@@ -325,6 +396,8 @@ The application is specifically designed to work with the **ArtNazarov/luassg** 
 - Clear error messages
 - Responsive UI with proper scrolling
 - Automatic file renaming when entity names change
+- Integrated configuration editing via menu
+- Visual XML tree editing for complex structures
 
 ## 🐛 Troubleshooting
 
@@ -345,6 +418,12 @@ sudo apt-get install python3-gi  # Ubuntu/Debian
 
 **Issue**: XML files not loading correctly
 **Solution**: Ensure files follow luassg format with `id` attribute on root element
+
+**Issue**: "XML tree editor not found" error
+**Solution**: Ensure `dialog_xml_tree_editor.py` is in the same directory as `app.py`
+
+**Issue**: Configuration menu items don't work
+**Solution**: Install python-lxml: `pip install lxml` or `sudo pacman -S python-lxml`
 
 ### Debug Mode
 Add debug prints to `load_entities()` method to see XML parsing issues.
@@ -394,23 +473,31 @@ Project Link: [https://github.com/ArtNazarov/entity_xml_crud_app](https://github
 - `render_xml_data_state()`: Master UI renderer
 - `on_refresh_all()`: Refresh everything (management tab)
 - `on_refresh_entity()`: Refresh single entity
+- `open_xml_in_editor()`: Launch XML tree editor
 
 ### Data Flow
 ```
 User Action → Load XML Data → Update Memory → Render UI State → Show Window
+Configuration Menu → Launch Editor → Edit XML → Save Changes
 ```
 
 ## 🚀 Example Workflow
 
 1. **Launch application**: `python app.py`
-2. **Add new entity**: Go to "Entity Management" tab → "New Entity"
+2. **Edit configuration**: Click **Configuration** → **Open ./data/CONST.xml**
+   - XML tree editor opens in a new window
+   - Edit the XML structure visually
+   - Save changes
+3. **Add new entity**: Go to "Entity Management" tab → "New Entity"
    - Name: "tasks"
    - Fields: "name" (oneline), "description" (multiline)
-3. **Add records**: Go to "tasks" tab → "New Record"
+4. **Add records**: Go to "tasks" tab → "New Record"
    - Fill in fields and save (creates `tasks-{uuid}.xml` in luassg format)
-4. **Edit structure**: Go to "Entity Management" → Select "tasks" → "Edit Entity"
+5. **Edit structure**: Go to "Entity Management" → Select "tasks" → "Edit Entity"
    - Add field: "priority" (oneline)
    - UI automatically updates with new column
-5. **Refresh data**: Click "Refresh All" to reload from disk
+6. **Refresh data**: Click "Refresh All" to reload from disk
+7. **Edit pagination**: Click **Configuration** → **Open ./data/pagination.xml**
+   - Configure pagination settings for your data
 
-That's it! Your data is automatically saved in the **luassg XML format**.
+That's it! Your data is automatically saved in the **luassg XML format** and configuration files can be edited directly from the application menu.
