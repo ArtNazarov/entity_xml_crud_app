@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 import xml.etree.ElementTree as ET
 import os
 import uuid
@@ -156,8 +156,24 @@ class EntityCRUDApp:
         """Initialize the main UI components (window, notebook)"""
         # Create main window
         self.window = Gtk.Window(title="Entity CRUD Application")
-        self.window.set_default_size(1200, 700)
+        
+        # Set window to 96% of screen width and 85% of screen height
+        screen = Gdk.Screen.get_default()
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        window_width = int(screen_width * 0.96)
+        window_height = int(screen_height * 0.85)
+        
+        self.window.set_default_size(window_width, window_height)
+        
+        # Center the window on screen
+        self.window.set_position(Gtk.WindowPosition.CENTER)
+        
         self.window.connect("destroy", Gtk.main_quit)
+        
+        # Connect window resize event to update table column widths
+        self.window.connect("check-resize", self.on_window_resize)
 
         # Create main vertical box
         main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -192,6 +208,39 @@ class EntityCRUDApp:
         pagination_menu_item = Gtk.MenuItem(label="Open ./data/pagination.xml")
         pagination_menu_item.connect("activate", self.on_open_pagination_xml)
         config_menu.append(pagination_menu_item)
+
+    def on_window_resize(self, widget):
+        """Handle window resize to update table column widths"""
+        # Update column widths for all entity tabs
+        for entity_name in self.entities.keys():
+            self.update_table_column_widths(entity_name)
+
+    def update_table_column_widths(self, entity_name):
+        """Update column widths for a specific entity table"""
+        if entity_name not in self.entities:
+            return
+        
+        treeview = self.entities[entity_name].get('treeview')
+        scrolled_window = self.entities[entity_name].get('scrolled_window')
+        
+        if not treeview or not scrolled_window:
+            return
+        
+        # Get current allocation of the scrolled window
+        allocation = scrolled_window.get_allocation()
+        table_width = allocation.width
+        
+        # Calculate equal width for each column
+        columns = treeview.get_columns()
+        if columns and table_width > 0:
+            # Calculate equal width for each column
+            column_count = len(columns)
+            equal_width = table_width / column_count
+            
+            # Set each column to equal width
+            for column in columns:
+                column.set_fixed_width(int(equal_width))
+                column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
 
     def on_open_const_xml(self, menu_item):
         """Handle opening CONST.xml in the XML tree editor"""
@@ -258,19 +307,85 @@ class EntityCRUDApp:
             self.window.queue_draw()
 
     def create_entity_tab(self, entity_name):
-        """Create a tab for a specific entity"""
-        # Create scrolled window
+        """Create a tab for a specific entity with filtering capability"""
+        # Create main container box
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        main_box.set_margin_start(10)
+        main_box.set_margin_end(10)
+        main_box.set_margin_top(5)
+        main_box.set_margin_bottom(5)
+
+        # Create scrolled window for the table (98% width of parent)
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_hexpand(True)
         scrolled_window.set_vexpand(True)
+        # Set initial size to 98% of parent width
+        scrolled_window.set_size_request(-1, -1)  # Will be dynamically adjusted
 
-        # Create main vertical box
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        scrolled_window.add(vbox)
+        # Create filter controls container using Grid for precise control
+        filter_grid = Gtk.Grid()
+        filter_grid.set_column_spacing(5)
+        filter_grid.set_row_spacing(5)
+        main_box.pack_start(filter_grid, False, False, 0)
 
-        # Create buttons
+        # Get current window width for percentage calculations
+        window_width = self.window.get_allocation().width
+        
+        # Filter label - 11% width
+        filter_label = Gtk.Label(label="Filter by:")
+        filter_label.set_halign(Gtk.Align.END)
+        filter_label.set_hexpand(False)
+        
+        # Create a fixed width container for the label
+        label_box = Gtk.Box()
+        label_box.pack_start(filter_label, True, True, 0)
+        filter_grid.attach(label_box, 0, 0, 1, 1)
+        
+        # Set width request for 11% of window width
+        label_width = int(window_width * 0.11)
+        label_box.set_size_request(label_width, -1)
+
+        # Field selection dropdown - 15% width
+        field_combo = Gtk.ComboBoxText()
+        
+        # Add "ID" as first option
+        field_combo.append_text("ID")
+        
+        # Add all field names
+        for field in self.entities[entity_name]['fields']:
+            field_combo.append_text(field['name'])
+        
+        # Set default selection to ID
+        field_combo.set_active(0)
+        field_combo.set_hexpand(False)
+        
+        # Create a fixed width container for the dropdown
+        combo_box = Gtk.Box()
+        combo_box.pack_start(field_combo, True, True, 0)
+        filter_grid.attach_next_to(combo_box, label_box, Gtk.PositionType.RIGHT, 1, 1)
+        
+        # Set width request for 15% of window width
+        combo_width = int(window_width * 0.15)
+        combo_box.set_size_request(combo_width, -1)
+
+        # Filter entry - fills remaining space
+        filter_entry = Gtk.Entry()
+        filter_entry.set_placeholder_text("Enter filter text...")
+        filter_entry.set_hexpand(True)
+        filter_grid.attach_next_to(filter_entry, combo_box, Gtk.PositionType.RIGHT, 1, 1)
+
+        # Clear filter button (fixed width)
+        clear_filter_btn = Gtk.Button(label="Clear")
+        clear_filter_btn.connect("clicked", self.on_clear_filter, entity_name)
+        clear_filter_btn.set_hexpand(False)
+        filter_grid.attach_next_to(clear_filter_btn, filter_entry, Gtk.PositionType.RIGHT, 1, 1)
+        
+        # Set fixed width for clear button
+        clear_filter_btn.set_size_request(80, -1)
+
+        # Create buttons for CRUD operations
         button_box = Gtk.Box(spacing=10)
-        vbox.pack_start(button_box, False, False, 0)
+        main_box.pack_start(button_box, False, False, 0)
 
         new_button = Gtk.Button(label="New Record")
         new_button.connect("clicked", self.on_new_record, entity_name)
@@ -290,7 +405,7 @@ class EntityCRUDApp:
 
         # Create tree view
         treeview = Gtk.TreeView()
-        vbox.pack_start(treeview, True, True, 0)
+        scrolled_window.add(treeview)
 
         # Create list store
         columns = ['ID']
@@ -299,29 +414,123 @@ class EntityCRUDApp:
 
         types = [str] * len(columns)
         list_store = Gtk.ListStore(*types)
-        treeview.set_model(list_store)
+        
+        # Create tree model filter for filtering
+        filter_model = list_store.filter_new()
+        filter_model.set_visible_func(self.filter_function, (entity_name, field_combo, filter_entry))
+        treeview.set_model(filter_model)
 
-        # Create columns
+        # Create columns (initial widths will be set by update_table_column_widths)
         for i, column_name in enumerate(columns):
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(column_name, renderer, text=i)
             column.set_resizable(True)
-            column.set_min_width(100)
+            column.set_expand(False)  # Don't expand, use fixed width
+            column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             treeview.append_column(column)
+
+        # Pack the scrolled window (with table) into main box
+        main_box.pack_start(scrolled_window, True, True, 0)
 
         # Store UI references
         self.entities[entity_name]['treeview'] = treeview
         self.entities[entity_name]['list_store'] = list_store
+        self.entities[entity_name]['filter_model'] = filter_model
+        self.entities[entity_name]['field_combo'] = field_combo
+        self.entities[entity_name]['filter_entry'] = filter_entry
         self.entities[entity_name]['columns'] = columns
-        self.entities[entity_name]['tab_widget'] = scrolled_window
+        self.entities[entity_name]['tab_widget'] = main_box
+        self.entities[entity_name]['scrolled_window'] = scrolled_window
+
+        # Connect filter entry changes
+        filter_entry.connect('changed', self.on_filter_changed, entity_name)
+        field_combo.connect('changed', self.on_filter_changed, entity_name)
+
+        # Connect size allocate to adjust column widths
+        scrolled_window.connect("size-allocate", self.on_table_size_allocate, entity_name)
+        
+        # Connect filter controls to adjust their widths on resize
+        label_box.connect("size-allocate", self.on_filter_control_resize, entity_name, "label")
+        combo_box.connect("size-allocate", self.on_filter_control_resize, entity_name, "combo")
 
         # Populate data
         self.populate_entity_tab_data(entity_name)
+        
+        # Initial column width update
+        GLib.idle_add(self.update_table_column_widths, entity_name)
 
         # Add tab to notebook if it exists
         if self.notebook:
             label = Gtk.Label(label=entity_name)
-            self.notebook.append_page(scrolled_window, label)
+            self.notebook.append_page(main_box, label)
+
+    def on_filter_control_resize(self, widget, allocation, entity_name, control_type):
+        """Update filter control widths when window is resized"""
+        if not self.window:
+            return
+            
+        window_width = self.window.get_allocation().width
+        if window_width <= 0:
+            return
+            
+        if control_type == "label":
+            # Update label width to 11% of window
+            new_width = int(window_width * 0.11)
+            widget.set_size_request(new_width, -1)
+        elif control_type == "combo":
+            # Update combo width to 15% of window
+            new_width = int(window_width * 0.15)
+            widget.set_size_request(new_width, -1)
+
+    def on_table_size_allocate(self, widget, allocation, entity_name):
+        """Adjust column widths when table size changes"""
+        self.update_table_column_widths(entity_name)
+
+    def filter_function(self, model, treeiter, data):
+        """Filter function for TreeModelFilter"""
+        entity_name, field_combo, filter_entry = data
+        
+        # Get filter text
+        filter_text = filter_entry.get_text().strip().lower()
+        
+        # If filter is empty, show all records
+        if not filter_text:
+            return True
+        
+        # Get selected field
+        field_name = field_combo.get_active_text()
+        
+        # Find the column index for the selected field
+        columns = self.entities[entity_name]['columns']
+        if field_name == "ID":
+            col_index = 0  # ID is first column
+        else:
+            try:
+                col_index = columns.index(field_name)
+            except ValueError:
+                # Field not found, show all
+                return True
+        
+        # Get the value from the model
+        value = model[treeiter][col_index]
+        if value is None:
+            return False
+        
+        # Check if filter text is contained in the value (case-insensitive)
+        return filter_text in value.lower()
+
+    def on_filter_changed(self, widget, entity_name):
+        """Handle filter changes"""
+        if entity_name in self.entities and 'filter_model' in self.entities[entity_name]:
+            self.entities[entity_name]['filter_model'].refilter()
+
+    def on_clear_filter(self, button, entity_name):
+        """Clear the filter for a specific entity"""
+        if entity_name in self.entities and 'filter_entry' in self.entities[entity_name]:
+            self.entities[entity_name]['filter_entry'].set_text("")
+            # Set dropdown back to ID
+            if 'field_combo' in self.entities[entity_name]:
+                self.entities[entity_name]['field_combo'].set_active(0)
 
     def populate_entity_tab_data(self, entity_name):
         """Populate the entity tab with data from memory"""
@@ -443,6 +652,7 @@ class EntityCRUDApp:
         model, treeiter = selection.get_selected()
 
         if treeiter is not None:
+            # Get the record ID from the filtered model
             record_id = model[treeiter][0]
             dialog = RecordDialog(self, entity_name, record_id)
             response = dialog.run()
@@ -465,6 +675,7 @@ class EntityCRUDApp:
         model, treeiter = selection.get_selected()
 
         if treeiter is not None:
+            # Get the record ID from the filtered model
             record_id = model[treeiter][0]
 
             dialog = Gtk.MessageDialog(
